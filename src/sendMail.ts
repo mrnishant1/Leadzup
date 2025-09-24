@@ -1,18 +1,23 @@
+import dotenv from 'dotenv';
+dotenv.config();
 import nodemailer from 'nodemailer';
 
+
 const transporter = nodemailer.createTransport({
-    host: 'smtp.ethereal.email',
-    port: 587,
+  host: "smtp.gmail.com",
+  port: 465,
+  secure: true,
     auth: {
-        user: process.env.DATABASE_URL,
-        pass: process.env.etherial_password
+        user: 'botnishant79@gmail.com',
+        pass: process.env.PASSWORD
     }
 });
 
 async function sendMail(postId:string, postLink:string,postTitle:string) {
+  
     const info = await transporter.sendMail({
     from: '"Reddit scipt" <luella32@ethereal.email>',
-    to: "nishantkumaragra@gmail.com",
+    to: "nsingh8483@gmail.com",
     subject: "Keyword matched",
     text: `postId:${postId}, postLink:${postLink}, postTitle:${postTitle}`, // plain‑text body
   });

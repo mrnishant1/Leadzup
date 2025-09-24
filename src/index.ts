@@ -1,29 +1,32 @@
-import axios from "axios";
 import AhoCorasick from "ahocorasick";
 import { headphones } from "./tempDB.js";
 import type { subData } from "./types.js";
 import mongoose from "mongoose";
 import dotenv from "dotenv";
-import { User } from "./lib/mongoDB.js";
-import sendMail from "./nodemailer.js";
+import sendMail from "./sendMail.js";
 import Fuse from "fuse.js";
+import { axiosInstance } from "./retryInstance.js";
+import { saveToDB } from "./saveToDB.js";
+import { commentHandler } from "./commentHandler.js";
 
 dotenv.config();
 
-//keep track of last Id --------------------------------------------------
-const ac = new AhoCorasick(headphones);
+//------------------------------Saved In memory
 let lastSeenId: string | null = null;
-
 let listingQueue: subData[] = [];
-const matchedTitles: string[][] = [];
-//Connecting to database--------------
+// const ac = new AhoCorasick(headphones);
+
+//--------------Connecting to database
 try {
-  await mongoose.connect(process.env.MongoDB_URL);
+  const res = await mongoose.connect(process.env.MONGO_URL);
+  if(res.ConnectionStates.connected===1){
+    console.log("connection has be done");
+  }
 } catch (error) {
   console.log("error in connecting to mongoDB" + error);
 }
 
-async function getAllposts(attempt = 1) {
+async function getAllposts() {
   try {
     console.log("hi");
     let newestPostId = await getLatestPostId();
@@ -34,11 +37,10 @@ async function getAllposts(attempt = 1) {
 
     let latestPostId = parseInt(newestPostId, 36);
     if (lastSeenId) {
-      console.log(
-        "difference -----------" + (latestPostId - parseInt(lastSeenId, 36))
+      console.log("difference -----------" + (latestPostId - parseInt(lastSeenId, 36))
       );
     }
-    //Batching the posts -------------------------------------------
+    //---------------Batching the posts
     for (let i = 0; i < 20; i++) {
       let batch = [];
       for (let j = 0; j < 100; j++) {
@@ -49,10 +51,9 @@ async function getAllposts(attempt = 1) {
       }
       let listingUrls =
         "https://api.reddit.com/api/info.json?id=" + batch.join(",");
-      //Gets Latest listing using IDs--------------------
-      const response = await axios.get(listingUrls, {
-        headers: { "User-Agent": "f5bot-clone/0.1 by u/Tough-Barracuda-8664" },
-      });
+
+      //--------------------Gets Latest listing using IDs
+      const response = await axiosInstance.get(listingUrls);
       response.data.data.children.forEach((children: any) => {
         if (
           !children.data.over_18 &&
@@ -73,16 +74,7 @@ async function getAllposts(attempt = 1) {
 
     lastSeenId = newestPostId;
   } catch (error) {
-    console.error(`Fetch failed (attempt ${attempt}):`, error);
-
-    if (attempt < 3) {
-      // 🔁 retry max 3 times
-      await new Promise((res) => setTimeout(res, 1000 * attempt)); // exponential backoff
-      return getAllposts(attempt + 1);
-    } else {
-      console.log("Skipping this round after 3 failed attempts");
-      return;
-    }
+    console.error(`Fetch attempts failed `, error);
   }
 }
 
@@ -116,58 +108,61 @@ async function getAllposts(attempt = 1) {
 
 async function keywordsMatcher() {
   const fuse = new Fuse(listingQueue, { keys: ["title"], threshold: 0.3 });
-  const matchedSet = new Set<typeof listingQueue[0]>();
+  const matchedSet = new Set<(typeof listingQueue)[0]>();
   for (const kw of headphones) {
     const results = fuse.search(kw);
-    results.forEach(r => matchedSet.add(r.item)); // deduplicate
+    results.forEach((r) => matchedSet.add(r.item)); // deduplicate
   }
   const matches = Array.from(matchedSet);
+  console.log("matches are ------------", matches); //--------------------------All the matches that we found
+
+  //----------------------------------All matched sent once
+  try {
+    await sendMail("All matches are:", JSON.stringify(matches), ".");
+  } catch (error) {
+    console.log("there is some error in send Mail", error);
+  }
 
   if (matches.length > 0) {
     for (const element of matches) {
-      //1. save to db
-      await saveToDB(element.postId,element.postLink,element.title)
-      //2. comment
-      
-      //3. mail
-      await sendMail(element.postId,element.postLink,element.title);
+      try {
+        //1. save to db
+        await saveToDB(element.postId, element.postLink, element.title);
+        //2. comment
+        await commentHandler(element.postId, "lol :)");
+       
+      } catch (error) {
+        sendMail(
+          "there is some error check the server",
+          "server stoped I think",
+          "check"
+        );
+        console.log("There's been an error in keyword matcher", error);
+      }
     }
   }
 
   //3. dequeue
-  listingQueue=[];
+  listingQueue = [];
 }
 
 async function getLatestPostId() {
-  const response = await axios.get(
-    "https://www.reddit.com/r/all/new.json?limit=2",
-    { headers: { "User-Agent": "f5bot-clone/0.1 by u/Tough-Barracuda-8664" } }
-  );
-  const children = response.data?.data?.children;
-  if (!children || children.length === 0) {
-    throw new Error("No posts returned");
-  }
-  return response.data.data.children[0].data.id;
-}
+  try {
+    const response = await axiosInstance.get(
+      "https://www.reddit.com/r/all/new.json?limit=2"
+    );
 
-//This function saves Post Id--------------
-async function saveToDB(postId: string, link: string, PostTitle: string) {
-  let attempt = 1;
-  while (attempt < 4) {
-    try {
-      return new User({ postId: postId, postLink: link });
-    } catch (err) {
-      attempt++;
-      const delay = Math.pow(2, attempt) * 1000; // 1s, 2s, 4s, etc
-      console.error(`Attempt ${attempt} failed:`, err);
-      await new Promise((res) => setTimeout(res, delay));
+    const children = response.data?.data?.children;
+    if (!children || children.length === 0) {
+      throw new Error("No posts returned");
     }
+    return response.data.data.children[0].data.id;
+  } catch (error) {
+    console.log("some error happened in gettLatestPost", error);
   }
-  console.log("All attemt of saving to DB has been failed");
-  return await sendMail(postId, link, PostTitle);
 }
 
-//fetch fresh post every 60 sec -----------------------
+//-----------------------fetch fresh post every 60 sec
 setInterval(async () => {
   await getAllposts();
   console.log("then");

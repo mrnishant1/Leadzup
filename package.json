@@ -19,13 +19,16 @@
     "dotenv": "^17.2.2",
     "fuse.js": "^7.1.0",
     "mongoose": "^8.18.1",
-    "nodemailer": "^7.0.6"
+    "nodemailer": "^7.0.6",
+    "retry-axios": "^3.2.1"
   },
   "devDependencies": {
     "@types/ahocorasick": "^1.0.0",
     "@types/dotenv": "^6.1.1",
+    "@types/node": "^24.5.2",
     "@types/nodemailer": "^7.0.1",
     "prisma": "^6.16.2",
+    "ts-node": "^10.9.2",
     "typescript": "^5.9.2"
   }
 }

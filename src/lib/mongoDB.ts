@@ -4,7 +4,7 @@ const userSchema = new Schema({
     postId: {type:String, required:true},
     postLink: {type:String, required:true},
     addedAt: {type:Date, default:Date.now()},
-    expiresAt: {type:Date, default:()=> Date.now()+24*1000*60*60}//expires after 24 hours.........
+    expiresAt: {type:Date, default:()=> Date.now()+12*1000*60*60}//expires after 12 hours.........
 })
 
 // TTL index -> deletes the document automatically when `expiresAt` < now

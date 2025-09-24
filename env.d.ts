@@ -1,8 +1,12 @@
 declare namespace NodeJS {
   interface ProcessEnv {
-    MongoDB_URL: string;
+    MONGO_URL: string;
     DATABASE_URL: string;
-    etherial_email:string;
-    etherial_password:string;
+    EMAIL:string;
+    PASSWORD:string;
+    CLIENT_ID:string;
+    CLIENT_SECRET:string;
+    REDDIT_USER:string;
+    REDDIT_PASS:string;
   }
 }
