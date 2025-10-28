@@ -3,11 +3,11 @@ import sendMail from "./sendMail.js";
 
 
 //--------------This function saves Post Id
-export async function saveToDB(postId: string, link: string, PostTitle: string) {
+export async function saveToDB(companyName:string,postId: string, link: string, PostTitle: string) {
   let attempt = 1;
   while (attempt < 4) {
     try {
-      return User.create({ postId: postId, postLink: link });
+      return User.create({companyName:companyName, postId: postId, postLink: link });
     } catch (err) {
       attempt++;
       const delay = Math.pow(2, attempt) * 1000; // 1s, 2s, 4s, etc

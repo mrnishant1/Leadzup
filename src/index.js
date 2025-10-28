@@ -1,38 +1,17 @@
-// import dotenv from 'dotenv'
-// dotenv.config()
-// import nodemailer from "nodemailer";
+const matchedSet = {
+  headphones: [
+    { postId: "abc1", title: "Cool new headphones", postLink: "..." },
+    { postId: "def2", title: "Bluetooth audio devices", postLink: "..." },
+  ],
+  memes: [{ postId: "xyz9", title: "Reddit meme thread", postLink: "..." }],
+};
 
-// const transporter = nodemailer.createTransport({
-//   host: "smtp.gmail.com",
-//   port: 465,
-//   secure: true,
-//   auth: {
-//     user: 'botnishant79@gmail.com',
-//     pass: 'dxhe siht pkfg kuzh'
-//     // user: process.env.etherial_email,
-//     // pass: process.env.etherial_password
-//   },
-// });
-
-// async function sendEmail() {
-//   const info = await transporter.sendMail({
-//     from: '"Reddit scipt" <luella32@ethereal.email>',
-//     to: "nsingh8483@gmail.com",
-//     subject: "Keyword matched",
-//     text: `hi`, // plain‑text body
-//   });
-
-//   console.log("Message sent:", info.messageId);
-// }
-// await sendEmail();
-// export default sendEmail;
-
-import mongoose from 'mongoose'
-import {User} from './lib/mongoDB.ts'
-await mongoose.connect('mongodb+srv://nishantkumaragra:MyDreamGame@redditposts.t7kcwqc.mongodb.net/')
-async function calltodb() {
-  const res = User.create({postId:"one", postLink:"two"})
-  return res
+for (const companies in matchedSet) {
+  if (Array.isArray(matchedSet[companies])) {
+    const matches = matchedSet[companies]
+    // console.log(companies);
+    matches.forEach((i)=>{
+      console.log(companies,i.postId);
+    })
+  }
 }
-const respose = await calltodb();
-console.log(respose);

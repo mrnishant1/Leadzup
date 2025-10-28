@@ -4,3 +4,4 @@ export interface subData {
     title: string;
     postLink: string;
 }
+

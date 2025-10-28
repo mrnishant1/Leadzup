@@ -1,7 +1,7 @@
 import { axiosInstance } from "./retryInstance.js";
 import sendMail from "./sendMail.js";
 
-const CLIENT_ID = process.env.CLIENT_ID;
+const CLIENT_ID = process.env.REDDIT_CLIENT_ID;
 const CLIENT_SECRET = process.env.CLIENT_SECRET;
 const REDDIT_USER = process.env.REDDIT_USER;
 const REDDIT_PASS = process.env.REDDIT_PASS;

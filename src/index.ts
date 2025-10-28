@@ -1,5 +1,5 @@
 import AhoCorasick from "ahocorasick";
-import { headphones } from "./tempDB.js";
+import { All_Companies } from "./tempDB.js";
 import type { subData } from "./types.js";
 import mongoose from "mongoose";
 import dotenv from "dotenv";
@@ -19,13 +19,14 @@ let listingQueue: subData[] = [];
 //--------------Connecting to database
 try {
   const res = await mongoose.connect(process.env.MONGO_URL);
-  if(res.ConnectionStates.connected===1){
+  if (res.ConnectionStates.connected === 1) {
     console.log("connection has be done");
   }
 } catch (error) {
   console.log("error in connecting to mongoDB" + error);
 }
 
+//---------------Fetching all the posts
 async function getAllposts() {
   try {
     console.log("hi");
@@ -37,7 +38,8 @@ async function getAllposts() {
 
     let latestPostId = parseInt(newestPostId, 36);
     if (lastSeenId) {
-      console.log("difference -----------" + (latestPostId - parseInt(lastSeenId, 36))
+      console.log(
+        "difference -----------" + (latestPostId - parseInt(lastSeenId, 36))
       );
     }
     //---------------Batching the posts
@@ -78,6 +80,7 @@ async function getAllposts() {
   }
 }
 
+//------------------Searchalgorithm  using Ahocorasic algorithm
 // async function keywordsMatcher() {
 //   const tempMatchedDB: subData[] = [];//this is temp in memory database just to log things--------
 //   //now keyword matching until queue gets empty---------------
@@ -106,38 +109,61 @@ async function getAllposts() {
 
 // This function- gets latest post Id-----------
 
+//-----------------Fussy search
 async function keywordsMatcher() {
   const fuse = new Fuse(listingQueue, { keys: ["title"], threshold: 0.3 });
-  const matchedSet = new Set<(typeof listingQueue)[0]>();
-  for (const kw of headphones) {
-    const results = fuse.search(kw);
-    results.forEach((r) => matchedSet.add(r.item)); // deduplicate
-  }
-  const matches = Array.from(matchedSet);
-  console.log("matches are ------------", matches); //--------------------------All the matches that we found
+  type Listing = {
+    postId: string;
+    postLink: string;
+    title: string;
+  };
 
-  //----------------------------------All matched sent once
-  try {
-    await sendMail("All matches are:", JSON.stringify(matches), ".");
-  } catch (error) {
-    console.log("there is some error in send Mail", error);
+  const companyMatches: Record<string, Listing[]> = {};
+//-----------------------Matchingg the results with companies keywords
+  for (const company in All_Companies) {
+    const matchedSet = new Set<(typeof listingQueue)[0]>();
+    if (Object.hasOwn(All_Companies, company)) {
+      //@ts-ignore
+      const words = All_Companies[company];
+      if (Array.isArray(words)) {
+        words.forEach((element) => {
+          //search element--------using fuse search
+          const matched_posts = fuse.search(element);
+          // if we got many matched results(posts) ---> then we store all matched into set avoid dupicate results
+          matched_posts.forEach((post) => {
+            matchedSet.add(post.item);
+          });
+        });
+      }
+    }
+    // if matches already exist for this company, append; otherwise create new array
+    if (!companyMatches[company]) {
+      companyMatches[company] = [];
+    }
+    companyMatches[company].push(...matchedSet);
   }
 
-  if (matches.length > 0) {
-    for (const element of matches) {
-      try {
-        //1. save to db
-        await saveToDB(element.postId, element.postLink, element.title);
-        //2. comment
-        await commentHandler(element.postId, "lol :)");
-       
-      } catch (error) {
-        sendMail(
-          "there is some error check the server",
-          "server stoped I think",
-          "check"
-        );
-        console.log("There's been an error in keyword matcher", error);
+//-----------------------Saving the results to db 
+  for (const company in companyMatches) {
+    if (Array.isArray(companyMatches[company])) {
+      const matches = companyMatches[company];
+      if (matches.length > 0) {
+        const limit = 5;
+        for (let i = 0; i < matches.length; i += limit) {
+          const chunk = matches.slice(i, i + limit);
+
+          //------------Promise.allSettled helps in concurrency setteling all 5 at once in parellel
+          const results = await Promise.allSettled(
+            chunk.map((el) =>
+              saveToDB(company, el.postId, el.postLink, el.title)
+            )
+          );
+          results.forEach((res, j) => {
+            if (res.status === "rejected") {
+              console.error("Failed:", chunk[j], res.reason);
+            }
+          });
+        }
       }
     }
   }
