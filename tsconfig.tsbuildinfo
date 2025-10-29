@@ -1,1 +1,1 @@
-{"root":["./env.d.ts","./src/commentHandler.ts","./src/handleOauth.ts","./src/index.ts","./src/retryInstance.ts","./src/saveToDB.ts","./src/sendMail.ts","./src/tempDB.ts","./src/types.ts","./src/lib/mongoDB.ts"],"version":"5.9.2"}
+{"root":["./env.d.ts","./src/commenthandler.ts","./src/handleoauth.ts","./src/index.ts","./src/retryinstance.ts","./src/savetodb.ts","./src/sendmail.ts","./src/tempdb.ts","./src/types.ts","./src/lib/mongodb.ts"],"version":"5.9.2"}

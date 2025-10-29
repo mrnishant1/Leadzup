@@ -14,7 +14,22 @@ dotenv.config();
 //------------------------------Saved In memory
 let lastSeenId: string | null = null;
 let listingQueue: subData[] = [];
-// const ac = new AhoCorasick(headphones);
+//-------------------------------Make search triee from database
+const All_Companies_search_tree: Record<string, AhoCorasick> = {};
+
+async function keywordDatabase() {
+  for (const company in All_Companies) {
+    if (Object.hasOwn(All_Companies, company)) {
+      const words = All_Companies[company];
+      if (Array.isArray(words) && !All_Companies_search_tree[company]) {
+        All_Companies_search_tree[company] = new AhoCorasick(words);
+      }
+    }
+  }
+  console.log("keywords done");
+}
+
+await keywordDatabase();
 
 //--------------Connecting to database
 try {
@@ -32,6 +47,7 @@ async function getAllposts() {
     console.log("hi");
     let newestPostId = await getLatestPostId();
     //store last latest post in last seen id
+    if (!newestPostId) return;
     if (!lastSeenId) {
       lastSeenId = newestPostId;
     }
@@ -43,11 +59,14 @@ async function getAllposts() {
       );
     }
     //---------------Batching the posts
-    for (let i = 0; i < 20; i++) {
+    outer: for (let i = 0; i < 20; i++) {
       let batch = [];
       for (let j = 0; j < 100; j++) {
         let id = (latestPostId - 1).toString(36);
-        if (id === lastSeenId) return;
+        if (id === lastSeenId) {
+          lastSeenId = newestPostId;
+          break outer;
+        }
         latestPostId = latestPostId - 1;
         batch.push("t3_" + id);
       }
@@ -81,69 +100,39 @@ async function getAllposts() {
 }
 
 //------------------Searchalgorithm  using Ahocorasic algorithm
-// async function keywordsMatcher() {
-//   const tempMatchedDB: subData[] = [];//this is temp in memory database just to log things--------
-//   //now keyword matching until queue gets empty---------------
-//   while (listingQueue.length) {
-//     if (!listingQueue[0]) return;
-//     const text = `${listingQueue[0].title}`;
-//     const results = ac.search(text.toLowerCase());
-//     //if there are------
-//     const matches = results.map((r) => r[1]);
-//     if (matches.length > 0) {
-//       matchedTitles.push(...matches);
-
-//       //1. push into db
-//         await saveToDB(listingQueue[0].postId, listingQueue[0].postLink, listingQueue[0].title);
-//         tempMatchedDB.push(listingQueue[0]);
-//       //2.comment
-
-//     }
-//     //3.dequeue
-//     listingQueue.shift();
-//   }
-//   console.log("listingQueue is now empty ");
-//   console.log("here is the matched post" + JSON.stringify(tempMatchedDB) + "\n");
-//   console.log("Matched titles were ---------------" + matchedTitles);
-// }
-
-// This function- gets latest post Id-----------
-
-//-----------------Fussy search
 async function keywordsMatcher() {
-  const fuse = new Fuse(listingQueue, { keys: ["title"], threshold: 0.3 });
   type Listing = {
     postId: string;
     postLink: string;
     title: string;
   };
 
+  console.log("matching started");
   const companyMatches: Record<string, Listing[]> = {};
-//-----------------------Matchingg the results with companies keywords
-  for (const company in All_Companies) {
-    const matchedSet = new Set<(typeof listingQueue)[0]>();
-    if (Object.hasOwn(All_Companies, company)) {
-      //@ts-ignore
-      const words = All_Companies[company];
-      if (Array.isArray(words)) {
-        words.forEach((element) => {
-          //search element--------using fuse search
-          const matched_posts = fuse.search(element);
-          // if we got many matched results(posts) ---> then we store all matched into set avoid dupicate results
-          matched_posts.forEach((post) => {
-            matchedSet.add(post.item);
-          });
-        });
+  //-----------------------Matchingg the results with companies keywords
+  while (listingQueue.length) {
+    if (listingQueue.length === 0) return;
+    for (const company in All_Companies_search_tree) {
+      const results = All_Companies_search_tree[company]?.search(
+        listingQueue[0]?.title.toLocaleLowerCase()!
+      );
+      if(results&& results.length>0){
+        if (!companyMatches[company]) {
+          companyMatches[company] = []
+        }
+        companyMatches[company].push({
+          postId: listingQueue[0]?.postId!,
+          postLink: listingQueue[0]?.postLink!,
+          title: listingQueue[0]?.title!,
+        })
       }
     }
-    // if matches already exist for this company, append; otherwise create new array
-    if (!companyMatches[company]) {
-      companyMatches[company] = [];
-    }
-    companyMatches[company].push(...matchedSet);
+
+    //dequeue
+    listingQueue.shift();
   }
 
-//-----------------------Saving the results to db 
+  //-----------------------Saving the results to db
   for (const company in companyMatches) {
     if (Array.isArray(companyMatches[company])) {
       const matches = companyMatches[company];
@@ -171,6 +160,71 @@ async function keywordsMatcher() {
   //3. dequeue
   listingQueue = [];
 }
+
+// This function- gets latest post Id-----------
+
+//-----------------Fussy search
+// async function keywordsMatcher() {
+//   const fuse = new Fuse(listingQueue, { keys: ["title"], threshold: 0.3 });
+//   type Listing = {
+//     postId: string;
+//     postLink: string;
+//     title: string;
+//   };
+
+//   const companyMatches: Record<string, Listing[]> = {};
+// //-----------------------Matchingg the results with companies keywords
+//   for (const company in All_Companies) {
+//     const matchedSet = new Set<(typeof listingQueue)[0]>();
+//     if (Object.hasOwn(All_Companies, company)) {
+//       //@ts-ignore
+//       const words = All_Companies[company];
+//       if (Array.isArray(words)) {
+//         words.forEach((element) => {
+//           //search element--------using fuse search
+//           const matched_posts = fuse.search(element);
+//           // if we got many matched results(posts) ---> then we store all matched into set avoid dupicate results
+//           matched_posts.forEach((post) => {
+//             matchedSet.add(post.item);
+//           });
+//         });
+//       }
+//     }
+//     // if matches already exist for this company, append; otherwise create new array
+//     if (!companyMatches[company]) {
+//       companyMatches[company] = [];
+//     }
+//     companyMatches[company].push(...matchedSet);
+//   }
+
+// //-----------------------Saving the results to db
+//   for (const company in companyMatches) {
+//     if (Array.isArray(companyMatches[company])) {
+//       const matches = companyMatches[company];
+//       if (matches.length > 0) {
+//         const limit = 5;
+//         for (let i = 0; i < matches.length; i += limit) {
+//           const chunk = matches.slice(i, i + limit);
+
+//           //------------Promise.allSettled helps in concurrency setteling all 5 at once in parellel
+//           const results = await Promise.allSettled(
+//             chunk.map((el) =>
+//               saveToDB(company, el.postId, el.postLink, el.title)
+//             )
+//           );
+//           results.forEach((res, j) => {
+//             if (res.status === "rejected") {
+//               console.error("Failed:", chunk[j], res.reason);
+//             }
+//           });
+//         }
+//       }
+//     }
+//   }
+
+//   //3. dequeue
+//   listingQueue = [];
+// }
 
 async function getLatestPostId() {
   try {

@@ -1,25 +1,25 @@
 import axios from "axios";
 import * as rax from "retry-axios";
 
-
 export const axiosInstance = axios.create({
-  headers: { "User-Agent": "f5bot-clone/0.1 by u/Tough-Barracuda-8664"} 
+  headers: { "User-Agent": "f5bot-clone/0.1 by u/Tough-Barracuda-8664" },
 });
 
-rax.attach(axiosInstance);
-
+// define config first
 axiosInstance.defaults.raxConfig = {
   instance: axiosInstance,
   retry: 3, // total retries
   noResponseRetries: 2,
-  retryDelay: 1000,
-  statusCodesToRetry: [[500, 599]], // will retry on 5xx
-  backoffType: "exponential",
-  httpMethodsToRetry: ["GET", "HEAD", "OPTIONS", "PUT", "DELETE", "POST"], // <-- add POST
+  backoffType: "exponential", // exponential backoff
+  retryDelay: 100, // base delay for exponential
+  statusCodesToRetry: [[500, 599]], // retry on 5xx
+  httpMethodsToRetry: ["GET", "HEAD", "OPTIONS", "PUT", "DELETE", "POST"],
   onRetryAttempt: (err) => {
     const cfg = rax.getConfig(err);
-    if(cfg)
-    console.log(`Retry attempt #${cfg.currentRetryAttempt}`);
+    if (cfg)
+      console.log(`Retry attempt #${cfg.currentRetryAttempt}`);
   },
 };
 
+// attach after config
+rax.attach(axiosInstance);

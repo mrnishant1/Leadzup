@@ -1,17 +1,14 @@
-const matchedSet = {
-  headphones: [
-    { postId: "abc1", title: "Cool new headphones", postLink: "..." },
-    { postId: "def2", title: "Bluetooth audio devices", postLink: "..." },
-  ],
-  memes: [{ postId: "xyz9", title: "Reddit meme thread", postLink: "..." }],
-};
+import fs from 'fs'
+async function writeMyFile() {
+  const filePath = 'myPromiseFile.txt';
+  const content = 'Content from a promise-based write.';
 
-for (const companies in matchedSet) {
-  if (Array.isArray(matchedSet[companies])) {
-    const matches = matchedSet[companies]
-    // console.log(companies);
-    matches.forEach((i)=>{
-      console.log(companies,i.postId);
-    })
+  try {
+    await fsync.writeFile(filePath, content);
+    console.log('Promise-based file written successfully!');
+  } catch (err) {
+    console.error('Error writing promise-based file:', err);
   }
 }
+
+writeMyFile();
