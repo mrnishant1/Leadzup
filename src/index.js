@@ -1,14 +1,28 @@
-import fs from 'fs'
-async function writeMyFile() {
-  const filePath = 'myPromiseFile.txt';
-  const content = 'Content from a promise-based write.';
+import axios from "axios";
+import * as rax from "retry-axios";
 
-  try {
-    await fsync.writeFile(filePath, content);
-    console.log('Promise-based file written successfully!');
-  } catch (err) {
-    console.error('Error writing promise-based file:', err);
-  }
-}
+export const axiosInstance = axios.create({
+  headers: { "User-Agent": "f5bot-clone/0.1 by u/Tough-Barracuda-8664" },
+});
 
-writeMyFile();
+// define config first
+axiosInstance.defaults.raxConfig = {
+  instance: axiosInstance,
+  retry: 3, // total retries
+  noResponseRetries: 2,
+  backoffType: "exponential", // exponential backoff
+  retryDelay: 500, // base delay for exponential
+  statusCodesToRetry: [[500, 599]], // retry on 5xx
+  httpMethodsToRetry: ["GET", "HEAD", "OPTIONS", "PUT", "DELETE", "POST"],
+  onRetryAttempt: (err) => {
+    const cfg = rax.getConfig(err);
+    if (cfg)
+      console.log(`Retry attempt #${cfg.currentRetryAttempt}`);
+  },
+};
+
+// attach after config
+rax.attach(axiosInstance);
+
+const res = await axiosInstance.get('https://httpstat.us/500',{data:"ok"})
+console.log(res.data);

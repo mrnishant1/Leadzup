@@ -226,21 +226,23 @@ async function keywordsMatcher() {
 //   listingQueue = [];
 // }
 
-async function getLatestPostId() {
+async function getLatestPostId(retry = 2) {
   try {
     const response = await axiosInstance.get(
       "https://www.reddit.com/r/all/new.json?limit=2"
     );
-
     const children = response.data?.data?.children;
-    if (!children || children.length === 0) {
-      throw new Error("No posts returned");
-    }
-    return response.data.data.children[0].data.id;
+    if (!children?.length) throw new Error("Empty response");
+    return children[0].data.id;
   } catch (error) {
-    console.log("some error happened in gettLatestPost", error);
+    if (retry > 0) {
+      console.warn("Retrying getLatestPostId…", retry);
+      return getLatestPostId(retry - 1);
+    }
+    console.error("Failed to fetch latest post:", error);
   }
 }
+
 
 //-----------------------fetch fresh post every 60 sec
 setInterval(async () => {

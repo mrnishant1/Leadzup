@@ -11,7 +11,7 @@ axiosInstance.defaults.raxConfig = {
   retry: 3, // total retries
   noResponseRetries: 2,
   backoffType: "exponential", // exponential backoff
-  retryDelay: 100, // base delay for exponential
+  retryDelay: 500, // base delay for exponential
   statusCodesToRetry: [[500, 599]], // retry on 5xx
   httpMethodsToRetry: ["GET", "HEAD", "OPTIONS", "PUT", "DELETE", "POST"],
   onRetryAttempt: (err) => {
