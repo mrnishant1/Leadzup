@@ -1,4 +1,3 @@
-import { User } from "./lib/mongoDB.js";
 import sendMail from "./sendMail.js";
 import fs from "fs/promises";
 
@@ -11,26 +10,28 @@ export async function saveToDB(
 ) {
   let attempt = 1;
   while (attempt < 4) {
-    // try {
-    //   return User.create({companyName:companyName, postId: postId, postLink: link });
-    // } catch (err) {
-    //   attempt++;
-    //   const delay = Math.pow(2, attempt) * 1000; // 1s, 2s, 4s, etc
-    //   console.error(`Attempt ${attempt} failed:`, err);
-    //   await new Promise((res) => setTimeout(res, delay));
-    // }
+    const filePath = "raw.json";
+    try {
+      let data = [];
+      try {
+        const file = await fs.readFile(filePath, "utf-8");
+        data = JSON.parse(file);
+      } catch {
+        // file might not exist or be empty
+        data = [];
+      }
+      const content = {
+        companyName: companyName,
+        PostID: postId,
+        Title: PostTitle,
+        Link: link,
+      };
+      data.push(content);
 
-   try {
-      const filePath = "myPromiseFile.txt";
-      const content = `companyName: ${companyName} |PostID: ${postId} | Title: ${PostTitle} | Link: ${link}\n`;
-      await fs.appendFile(filePath, content);
-      console.log("File written successfully!");
-      return;
+      await fs.writeFile(filePath, JSON.stringify(data, null, 2));
+      console.log("Saved cleanly.");
     } catch (err) {
-      attempt++;
-      const delay = Math.pow(2, attempt) * 1000; // exponential backoff
-      console.error(`Attempt ${attempt} failed:`, err);
-      await new Promise((res) => setTimeout(res, delay));
+      console.error("Write failed:", err);
     }
   }
   console.log("All attemt of saving to DB has been failed");

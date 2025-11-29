@@ -1,13 +1,12 @@
 import AhoCorasick from "ahocorasick";
-import { All_Companies } from "./tempDB.js";
 import type { subData } from "./types.js";
-import mongoose from "mongoose";
 import dotenv from "dotenv";
 import sendMail from "./sendMail.js";
 import Fuse from "fuse.js";
 import { axiosInstance } from "./retryInstance.js";
 import { saveToDB } from "./saveToDB.js";
 import { commentHandler } from "./commentHandler.js";
+import { getClientCompanies } from "./tempDB.js";
 
 dotenv.config();
 
@@ -18,6 +17,11 @@ let listingQueue: subData[] = [];
 const All_Companies_search_tree: Record<string, AhoCorasick> = {};
 
 async function keywordDatabase() {
+  const All_Companies = await getClientCompanies();
+
+  if (!All_Companies || Object.keys(All_Companies).length === 0) {
+    return;
+  }
   for (const company in All_Companies) {
     if (Object.hasOwn(All_Companies, company)) {
       const words = All_Companies[company];
@@ -26,19 +30,6 @@ async function keywordDatabase() {
       }
     }
   }
-  console.log("keywords done");
-}
-
-await keywordDatabase();
-
-//--------------Connecting to database
-try {
-  const res = await mongoose.connect(process.env.MONGO_URL);
-  if (res.ConnectionStates.connected === 1) {
-    console.log("connection has be done");
-  }
-} catch (error) {
-  console.log("error in connecting to mongoDB" + error);
 }
 
 //---------------Fetching all the posts
@@ -116,15 +107,15 @@ async function keywordsMatcher() {
       const results = All_Companies_search_tree[company]?.search(
         listingQueue[0]?.title.toLocaleLowerCase()!
       );
-      if(results&& results.length>0){
+      if (results && results.length > 0) {
         if (!companyMatches[company]) {
-          companyMatches[company] = []
+          companyMatches[company] = [];
         }
         companyMatches[company].push({
           postId: listingQueue[0]?.postId!,
           postLink: listingQueue[0]?.postLink!,
           title: listingQueue[0]?.title!,
-        })
+        });
       }
     }
 
@@ -159,6 +150,23 @@ async function keywordsMatcher() {
 
   //3. dequeue
   listingQueue = [];
+}
+
+async function getLatestPostId(retry = 2) {
+  try {
+    const response = await axiosInstance.get(
+      "https://www.reddit.com/r/all/new.json?limit=2"
+    );
+    const children = response.data?.data?.children;
+    if (!children?.length) throw new Error("Empty response");
+    return children[0].data.id;
+  } catch (error) {
+    if (retry > 0) {
+      console.warn("Retrying getLatestPostId…", retry);
+      return getLatestPostId(retry - 1);
+    }
+    console.error("Failed to fetch latest post:", error);
+  }
 }
 
 // This function- gets latest post Id-----------
@@ -226,27 +234,32 @@ async function keywordsMatcher() {
 //   listingQueue = [];
 // }
 
-async function getLatestPostId(retry = 2) {
-  try {
-    const response = await axiosInstance.get(
-      "https://www.reddit.com/r/all/new.json?limit=2"
-    );
-    const children = response.data?.data?.children;
-    if (!children?.length) throw new Error("Empty response");
-    return children[0].data.id;
-  } catch (error) {
-    if (retry > 0) {
-      console.warn("Retrying getLatestPostId…", retry);
-      return getLatestPostId(retry - 1);
-    }
-    console.error("Failed to fetch latest post:", error);
-  }
-}
-
-
 //-----------------------fetch fresh post every 60 sec
+
+// start-up load
+await keywordDatabase();
+
+// refresh keywords every 6 hours
 setInterval(async () => {
+  try {
+    console.log("Refreshing keyword database...");
+    await keywordDatabase();
+    console.log("Keyword DB refreshed.");
+  } catch (e) {
+    console.error("Error refreshing keyword DB:", e);
+  }
+}, 6 * 60 * 60 * 1000);
+
+async function runOtherServices() {
+  if (Object.keys(All_Companies_search_tree).length === 0) {
+    console.log("no keywords in tempDB");
+    return;
+  }
   await getAllposts();
   console.log("then");
   keywordsMatcher();
+}
+
+setInterval(async () => {
+  await runOtherServices();
 }, 60_000);

@@ -6,7 +6,7 @@
   "type": "module",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "tsc -b && node ./dist/index.js",
+    "start": "tsc -b && node ./dist/index.js && node ./dist/server.js",
     "build": "tsc -b"
   },
   "keywords": [],
@@ -16,18 +16,21 @@
     "ahocorasick": "^1.0.2",
     "axios": "^1.12.2",
     "dotenv": "^17.2.2",
+    "express": "^5.1.0",
     "fuse.js": "^7.1.0",
     "mongoose": "^8.18.1",
     "nodemailer": "^7.0.6",
+    "postgres": "^3.4.7",
     "retry-axios": "^3.2.1"
   },
   "devDependencies": {
     "@types/ahocorasick": "^1.0.0",
     "@types/dotenv": "^6.1.1",
+    "@types/express": "^5.0.5",
     "@types/node": "^24.5.2",
     "@types/nodemailer": "^7.0.1",
     "prisma": "^6.16.2",
     "ts-node": "^10.9.2",
-    "typescript": "^5.9.2"
+    "typescript": "^5.9.3"
   }
 }
