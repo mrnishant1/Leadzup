@@ -18,7 +18,18 @@
 
 <body>
 
-    <h2>Pending Posts</h2>
+    <div style="display: flex; justify-content: space-around;">
+        <h2>Pending Posts</h2> <button onclick="refreshClients()">Refresh clients</button>
+        <script>
+            async function refreshClients() {
+            const res = await fetch("/api/refreshclient");
+            const data = await res.json();
+            if (data.success) {
+                alert("Client keywords updated");
+            }
+            }
+        </script>
+    </div>
     <div id="list"></div>
 
     <script>
@@ -36,12 +47,12 @@
                 div.className = "item";
 
                 div.innerHTML = `
-        <strong>${p.Title}</strong><br>
-        Company: ${p.companyName}<br>
-        <a href="${p.Link}" target="_blank">Open Post</a><br>
+        <strong>${p.title}</strong><br>
+        Company: ${p.gmail}<br>
+        <a href="${p.link}" target="_blank">Open Post</a><br>
         <br>
-        <input type="checkbox" data-id="${p.PostID}"  class="approve"> Approve
-        <input type="checkbox" data-id="${p.PostID}" class="delete"> Delete
+        <input type="checkbox" data-id="${p.postId}"  class="approve"> Approve
+        <input type="checkbox" data-id="${p.postId}" class="delete"> Delete
       `;
 
                 //approve or delete
@@ -53,7 +64,7 @@
                             headers: {
                                 "Content-Type": "application/json"
                             },
-                            body: JSON.stringify({ index })
+                            body: JSON.stringify({ postId:p.postId, gmail:p.gmail, postLink:p.link})
                         });
 
                         const data = await res.json();
@@ -73,7 +84,7 @@
                             headers: {
                                 "Content-Type": "application/json"
                             },
-                            body: JSON.stringify({ index })
+                            body: JSON.stringify({ postId: p.postId })
                         });
 
                         const data = await res.json();

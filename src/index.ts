@@ -7,30 +7,12 @@ import { axiosInstance } from "./retryInstance.js";
 import { saveToDB } from "./saveToDB.js";
 import { commentHandler } from "./commentHandler.js";
 import { getClientCompanies } from "./tempDB.js";
-
+import { keywordDatabase, All_Companies_search_tree } from "./keywordloader.js";
 dotenv.config();
 
 //------------------------------Saved In memory
 let lastSeenId: string | null = null;
 let listingQueue: subData[] = [];
-//-------------------------------Make search triee from database
-const All_Companies_search_tree: Record<string, AhoCorasick> = {};
-
-async function keywordDatabase() {
-  const All_Companies = await getClientCompanies();
-
-  if (!All_Companies || Object.keys(All_Companies).length === 0) {
-    return;
-  }
-  for (const company in All_Companies) {
-    if (Object.hasOwn(All_Companies, company)) {
-      const words = All_Companies[company];
-      if (Array.isArray(words) && !All_Companies_search_tree[company]) {
-        All_Companies_search_tree[company] = new AhoCorasick(words);
-      }
-    }
-  }
-}
 
 //---------------Fetching all the posts
 async function getAllposts() {
@@ -128,6 +110,7 @@ async function keywordsMatcher() {
     if (Array.isArray(companyMatches[company])) {
       const matches = companyMatches[company];
       if (matches.length > 0) {
+        
         const limit = 5;
         for (let i = 0; i < matches.length; i += limit) {
           const chunk = matches.slice(i, i + limit);
@@ -135,7 +118,8 @@ async function keywordsMatcher() {
           //------------Promise.allSettled helps in concurrency setteling all 5 at once in parellel
           const results = await Promise.allSettled(
             chunk.map((el) =>
-              saveToDB(company, el.postId, el.postLink, el.title)
+              saveToDB(company, el.postId, el.postLink, el.title),
+            console.log("save to db called in promise.allsettled")
             )
           );
           results.forEach((res, j) => {
@@ -238,7 +222,6 @@ async function getLatestPostId(retry = 2) {
 
 // start-up load
 await keywordDatabase();
-
 // refresh keywords every 6 hours
 setInterval(async () => {
   try {

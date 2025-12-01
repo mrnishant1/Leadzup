@@ -20,32 +20,16 @@ export async function getClientCompanies() {
     acc[item.gmail] = item.keywords;
     return acc;
   }, {} as Record<string, string[]>);
-
-  console.log(All_Companies);
-
+  
   return All_Companies;
 }
 
-await getClientCompanies();
+// export async function insertGeneratedLead(gmail: string, postlink: string) {
+//   const result = await sql`
+//     INSERT INTO "GeneratedLeads" ("post", "userMail")
+//     VALUES (${postlink}, ${gmail})
+//     RETURNING *;
+//   `;  
+//   return result;
+// }
 
-export async function insertGeneratedLead(gmail: string, postlink: string) {
-  const result = await sql`
-    INSERT INTO "GeneratedLeads" ("post", "userMail")
-    VALUES (${postlink}, ${gmail})
-    RETURNING *;
-  `;
-
-  console.log(result);
-  return result;
-}
-
-export async function insertDMs(gmail: string, message: string) {
-  const result = await sql`
-    INSERT INTO "GeneratedLeads" ("message", "userMail")
-    VALUES (${message}, ${gmail})
-    RETURNING *;
-  `;
-
-  console.log(result);
-  return result;
-}
