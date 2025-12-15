@@ -13,7 +13,7 @@ export async function saveToDB(
   while (attempt <= 3) {
     try {
       await sql`
-  INSERT INTO rawPostsMatched (gmail, postId, title, link)
+  INSERT INTO "rawPostsMatched" (gmail, "postId", title, link)
   VALUES (${companyName}, ${postId}, ${PostTitle}, ${link});
 `;
       return; // stop after success
