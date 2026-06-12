@@ -1,25 +1,34 @@
 import axios from "axios";
 import * as rax from "retry-axios";
+import dotenv from "dotenv";
+
+dotenv.config();
+
+function redditUsername(): string {
+  const raw = process.env.REDDIT_USER ?? "unknown";
+  return raw.replace(/^u\//i, "");
+}
+
+export const USER_AGENT =
+  process.env.REDDIT_USER_AGENT ??
+  `script:${process.env.REDDIT_CLIENT_ID ?? "redditwrapper"}:v1.0.0 (by /u/${redditUsername()})`;
 
 export const axiosInstance = axios.create({
-  headers: { "User-Agent": "f5bot-clone/0.1 by u/Tough-Barracuda-8664" },
+  headers: { "User-Agent": USER_AGENT },
 });
 
-// define config first
 axiosInstance.defaults.raxConfig = {
   instance: axiosInstance,
-  retry: 3, // total retries
+  retry: 3,
   noResponseRetries: 2,
-  backoffType: "exponential", // exponential backoff
-  retryDelay: 500, // base delay for exponential
-  statusCodesToRetry: [[500, 599]], // retry on 5xx
+  backoffType: "exponential",
+  retryDelay: 500,
+  statusCodesToRetry: [[500, 599]],
   httpMethodsToRetry: ["GET", "HEAD", "OPTIONS", "PUT", "DELETE", "POST"],
   onRetryAttempt: (err) => {
     const cfg = rax.getConfig(err);
-    if (cfg)
-      console.log(`Retry attempt #${cfg.currentRetryAttempt}`);
+    if (cfg) console.log(`Retry attempt #${cfg.currentRetryAttempt}`);
   },
 };
 
-// attach after config
 rax.attach(axiosInstance);

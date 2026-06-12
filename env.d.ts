@@ -1,12 +1,13 @@
 declare namespace NodeJS {
   interface ProcessEnv {
-    MONGO_URL: string;
-    EMAIL: string;
-    EMAIL_APP_PASSWORD: string;
     REDDIT_CLIENT_ID: string;
-    REDDIT_CLIENT_SECRET: string;
+    CLIENT_SECRET: string;
     REDDIT_USER: string;
     REDDIT_PASS: string;
-    DATABASE_URL: string;
+    REDDIT_USER_AGENT?: string;
+    OLLAMA_BASE_URL?: string;
+    OLLAMA_MODEL?: string;
+    PORT?: string;
+    Product_Name?: string;
   }
 }

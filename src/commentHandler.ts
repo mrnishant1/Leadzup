@@ -1,6 +1,5 @@
-import axios from "axios";
 import { getAccessToken } from "./handleOauth.js";
-import { axiosInstance } from "./retryInstance.js";
+import { axiosInstance, USER_AGENT } from "./retryInstance.js";
 
 export async function commentHandler(postID:string, text:string) {
     const Access_token = await getAccessToken();
@@ -15,7 +14,7 @@ export async function commentHandler(postID:string, text:string) {
       headers: {
         Authorization: `bearer ${Access_token}`,
         "Content-Type": "application/x-www-form-urlencoded",
-         "User-Agent": "f5bot-clone/0.1 by u/Tough-Barracuda-8664"
+        "User-Agent": USER_AGENT,
       },
     }
   );

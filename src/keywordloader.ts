@@ -1,21 +1,25 @@
 import AhoCorasick from "ahocorasick";
-import { getClientCompanies } from "./tempDB.js";
+import { getKeywords } from "./storage.js";
 
-export const All_Companies_search_tree:Record<string, AhoCorasick> = {};
+export const All_Companies_search_tree: Record<string, AhoCorasick> = {};
 
+//Product_Name is the company that is wants to promote
+//I've set Product_Name as Product you wants to promote 
+const Product_Name = process.env.Product_Name||"local";
+
+//=========================Builds Aho-Corasick trees from local keywords=========================
 export async function keywordDatabase() {
-  const All_Companies = await getClientCompanies();
+  const keywords = await getKeywords();
 
-  if (!All_Companies || Object.keys(All_Companies).length === 0) {
+  if (!keywords || keywords.length === 0) {
+    delete All_Companies_search_tree[Product_Name];
     return false;
   }
 
-  for (const company in All_Companies) {
-    const words = All_Companies[company];
-    if (Array.isArray(words)) {
-      All_Companies_search_tree[company] = new AhoCorasick(words);
-    }
-  }
-
+  All_Companies_search_tree[Product_Name] = new AhoCorasick(keywords);
   return true;
+}
+
+export function getLocalUserKey() {
+  return Product_Name;
 }
