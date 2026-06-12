@@ -87,10 +87,7 @@ _API endpoints
 > GET /api/health — Ollama + listener status
 
 
-## License
-
-> _Add license here._
-
 ## Author
 
-> _Add author/contact info here._
+> Made by Nishant Kumar
+GitHub: https://github.com/mrnishant1
