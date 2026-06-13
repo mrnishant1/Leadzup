@@ -1,4 +1,4 @@
-# Redditwrapper
+# Leadzup
 
 Local Reddit keyword monitor with Aho-Corasick matching and local LLM-powered reply drafting via Ollama.
 
@@ -21,13 +21,13 @@ Local Reddit keyword monitor with Aho-Corasick matching and local LLM-powered re
 1. Clone the repo
 
    ```bash
-   git clone <repo-url>
+   git clone https://github.com/mrnishant1/Leadzup.git
    ```
 
 2. Move into the project directory
 
    ```bash
-   cd redditwrapper
+   cd leadzup
    ```
 
 3. Install dependencies
@@ -77,17 +77,18 @@ npm run start
 5. Ollama generates suggested replies → shown in the reply queue
 6. Post Reply sends the comment via Reddit OAuth (optional; needs .env credentials)_
 
-_API endpoints
-> GET/POST /api/keywords — read/save keywords
-> POST /api/listener/start / stop — control the listener
-> GET /api/matches — matched posts
-> GET /api/replies — reply queue
-> POST /api/replies/:postId/approve — post reply to Reddit
-> GET /api/events — SSE stream for live updates
-> GET /api/health — Ollama + listener status
+> _API endpoints
+1. GET/POST /api/keywords — read/save keywords
+2. POST /api/listener/start / stop — control the listener
+3. GET /api/matches — matched posts
+4. GET /api/replies — reply queue
+5. POST /api/replies/:postId/approve — post reply to Reddit
+6. GET /api/events — SSE stream for live updates
+7. GET /api/health — Ollama + listener status
 
 
 ## Author
 
 > Made by Nishant Kumar
 GitHub: https://github.com/mrnishant1
+> Gmail: nishantkumaragra@gmail.com
